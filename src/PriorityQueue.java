@@ -11,11 +11,6 @@ public interface PriorityQueue {
      * Pop the highest priority element from the queue.
      * @return value of highest priority element.
      */
-    Integer pop();
+    Integer deleteMin();
 
-    /**
-     * Determines whether queue is empty.
-     * @return true if no elements in the queue.
-     */
-    boolean is_empty();
 }

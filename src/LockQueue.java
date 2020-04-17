@@ -12,13 +12,8 @@ public class LockQueue implements PriorityQueue {
     }
 
     @Override
-    public Integer pop() {
+    public Integer deleteMin() {
         return null;
-    }
-
-    @Override
-    public boolean is_empty() {
-        return false;
     }
 
     protected class Node {
