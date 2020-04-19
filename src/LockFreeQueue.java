@@ -1,9 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 
@@ -25,7 +23,7 @@ public class LockFreeQueue implements PriorityQueue {
 
     final static int DIMENSION = 8;
 
-    AtomicStampedReference<Node> head = new AtomicStampedReference<>(new Node(), 0);    // Dummy head
+    AtomicStampedReference<Node> head = new AtomicStampedReference<>(new Node(0, 0), 0);    // Dummy head
     AtomicReference<Stack> del_stack = new AtomicReference<>(new Stack());      // deletion stack.
 
     public LockFreeQueue() {
@@ -71,7 +69,7 @@ public class LockFreeQueue implements PriorityQueue {
 
             // Fill new node
             if (pred_dim < curr_dim) {
-                Desc adesc = new Desc();
+                AdoptDesc adesc = new AdoptDesc();
                 adesc.curr = curr;
                 adesc.pred_dim = pred_dim;
                 adesc.curr_dim = curr_dim;
@@ -98,7 +96,9 @@ public class LockFreeQueue implements PriorityQueue {
 
     @Override
     public Integer deleteMin() {
-        return null;
+        Node min = null;
+        AtomicReference<Stack> s_old = del_stack;
+        return 0;
     }
 
     private void purge(Node prg) {
@@ -106,7 +106,21 @@ public class LockFreeQueue implements PriorityQueue {
     }
 
     private void finishInserting(Node n, int dp, int dc) {
-
+        if (n == null) {
+            return;
+        }
+        AtomicReference<AdoptDesc> ad = n.adesc;
+        if (ad.get() == null || dc < ad.get().pred_dim || dp > ad.get().curr_dim) {
+            return;
+        }
+        Node child;
+        Node curr = ad.get().curr;
+        dp = ad.get().pred_dim;
+        dc = ad.get().curr_dim;
+        for (int i = dp; i < dc; i++) {
+            // TODO Algorithm 9 lines 10-12
+        }
+        n.adesc = null;
     }
 
     /**
@@ -143,7 +157,7 @@ public class LockFreeQueue implements PriorityQueue {
         AtomicStampedReference<Integer> val;    // value, marked with DEL for logical deletion (stamp = 1)
         ArrayList<AtomicStampedReference<Node>> child;  // Child nodes, stamped with ADP (stamp = 2) or PRG (stamp = 3).
         int[] coord = new int[DIMENSION];   // coordinates in 8D
-        AtomicReference<Desc> adesc;  // adoption descriptor for thread helping.
+        AtomicReference<AdoptDesc> adesc;  // adoption descriptor for thread helping.
 
         // Note: missing seq and purged fields, don't think it's important but add later if necessary.
 
@@ -158,12 +172,18 @@ public class LockFreeQueue implements PriorityQueue {
         }
     }
 
-    static class Desc {
+    static class AdoptDesc {
         // Represents an unfinished adoption operation for helping other threads.
 
         Node curr;
         int pred_dim;
         int curr_dim;
+
+        public AdoptDesc(Node curr, int pred_dim, int curr_dim) {
+            this.curr = curr;
+            this.pred_dim = pred_dim;
+            this.curr_dim = curr_dim;
+        }
     }
 
     static class Stack {
