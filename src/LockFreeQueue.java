@@ -84,7 +84,22 @@ public class LockFreeQueue implements PriorityQueue {
             if (pred.child.get(pred_dim).compareAndSet(curr, node, curr_stamp_holder[0], 0)) {
                 finishInserting(node, pred_dim, curr_dim);
                 // Rewind Stack
+                Stack sOld = del_stack.get();
+                while (true) {
+                    if (s.head.getStamp() == sOld.head.getStamp()) {
+                        if (node.key <= s.node[DIMENSION - 1].key) { // what is sNew in the paper?
+                            for (int i = pred_dim; i < DIMENSION; i++) {
+                                sNew.node[i] = pred;
+                            }
+                        } else if (first iteration) {
+                            s = sNew;
+                        } else {
+                            break;
+                        }
+                    } else if (s.head.getStamp() > sOld.head.getStamp()) {
 
+                    }
+                }
                 break;
             }
         }
