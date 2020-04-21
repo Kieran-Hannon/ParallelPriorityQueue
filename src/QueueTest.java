@@ -1,5 +1,6 @@
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class QueueTest {
     @Test
@@ -10,11 +11,11 @@ public class QueueTest {
     public void testLockQueue() throws InterruptedException {
     }
 
-
     static class Insert_Thread implements Runnable {
-        int val, priority;
+        Object val;
+        Integer priority;
         PriorityQueue q;
-        public Insert_Thread(int val_to_enq, int priority, PriorityQueue q) {
+        public Insert_Thread(Object val_to_enq, int priority, PriorityQueue q) {
             val = val_to_enq;
             this.q = q;
             this.priority = priority;
@@ -26,7 +27,7 @@ public class QueueTest {
     }
 
     static class Remove_Thread implements Runnable {
-        Integer val;
+        Object val;
         PriorityQueue q;
         public Remove_Thread(PriorityQueue q) {
             val = null;
@@ -36,7 +37,7 @@ public class QueueTest {
         public void run() {
             val = q.deleteMin();
         }
-        public int get_val() {
+        public Object get_val() {
             return val;
         }
     }

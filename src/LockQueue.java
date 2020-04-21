@@ -1,6 +1,3 @@
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
-
 public class LockQueue implements PriorityQueue {
 
     public LockQueue() {
@@ -12,15 +9,15 @@ public class LockQueue implements PriorityQueue {
     }
 
     @Override
-    public Integer deleteMin() {
+    public Object deleteMin() {
         return null;
     }
 
     protected class Node {
-        public Integer value;
+        public Object value;
         public Node next;
 
-        public Node(Integer x) {
+        public Node(Object x) {
             value = x;
             next = null;
         }

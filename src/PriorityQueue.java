@@ -11,6 +11,6 @@ public interface PriorityQueue {
      * Pop the highest priority element from the queue.
      * @return value of highest priority element.
      */
-    Integer deleteMin();
+    Object deleteMin();
 
 }
