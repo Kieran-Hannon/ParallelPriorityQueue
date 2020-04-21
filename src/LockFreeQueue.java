@@ -35,7 +35,7 @@ public class LockFreeQueue implements PriorityQueue {
 
 
     @Override
-    public boolean insert(Integer value, Integer priority) {
+    public boolean insert(Object value, Integer priority) {
         // priority = makeUnique(priority);    // make priority unique using rng, TODO: uncomment later
 
         Stack s = new Stack();
@@ -230,7 +230,7 @@ public class LockFreeQueue implements PriorityQueue {
 
         // Note: missing seq and purged fields, don't think it's important but add later if necessary.
 
-        public Node(int priority, int value) {
+        public Node(int priority, Object value) {
             key = priority;
             val = new AtomicStampedReference<>(value, 0);
             child = new ArrayList<>(DIMENSION);

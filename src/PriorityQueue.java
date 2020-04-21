@@ -5,7 +5,7 @@ public interface PriorityQueue {
      * @param priority priority of the element.
      * @return true if successfully added.
      */
-    boolean insert(Integer value, Integer priority);
+    boolean insert(Object value, Integer priority);
 
     /**
      * Pop the highest priority element from the queue.

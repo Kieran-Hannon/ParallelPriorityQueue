@@ -7,7 +7,7 @@ public class LockQueue implements PriorityQueue {
     }
 
     @Override
-    public boolean insert(Integer value, Integer priority) {
+    public boolean insert(Object value, Integer priority) {
         return false;
     }
 
