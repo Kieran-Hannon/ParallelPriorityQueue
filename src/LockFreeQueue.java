@@ -160,7 +160,43 @@ public class LockFreeQueue implements PriorityQueue {
     @Override
     public Integer deleteMin() {
         Node min = null;
-        AtomicReference<Stack> s_old = del_stack;
+        Stack sOld = del_stack.get();
+        Stack s = new Stack();
+        int[] sOld_stamp = new int[1];
+        s.head.set(sOld.head.get(sOld_stamp), sOld_stamp[0]);
+        for (int i = 0; i < DIMENSION; i++) {
+            s.node[i] = sOld.node[i];
+        }
+
+        int d = DIMENSION - 1;
+        while (d > 0) {
+            Node last = s.node[d];
+            finishInserting(last, d, d);
+            AtomicStampedReference<Node> child = last.child.get(d);
+            child = // ?
+            if (child == null) {
+                d = d - 1;
+                continue;
+            }
+            AtomicStampedReference val = new AtomicStampedReference();
+            val.set(child.getReference(), child.getStamp());
+            if (val.getStamp() == 1) {
+                if () { // clearmark
+                    for (int i = d; i < DIMENSION; i++) {
+                        s.node[i] = child.getReference();
+                    }
+                    d = DIMENSION - 1;
+                } else {
+                    s.head = //clear mark
+                    for (int i = 0; i < DIMENSION; i++) {
+                        s.node[i] = s.head.getReference();
+                    }
+                    d = DIMENSION - 1;
+                }
+
+            }
+        }
+
         return 0;
     }
 
