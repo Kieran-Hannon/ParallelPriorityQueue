@@ -158,7 +158,7 @@ public class LockFreeQueue implements PriorityQueue {
     }
 
     @Override
-    public Object deleteMin() {
+    public Object extractMin() {
         Node min = null;
         Stack sOld = del_stack.get();
         Stack s = new Stack();

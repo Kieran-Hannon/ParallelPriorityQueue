@@ -35,7 +35,7 @@ public class QueueTest {
         }
         @Override
         public void run() {
-            val = q.deleteMin();
+            val = q.extractMin();
         }
         public Object get_val() {
             return val;

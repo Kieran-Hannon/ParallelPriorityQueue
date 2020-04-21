@@ -9,7 +9,7 @@ public class LockQueue implements PriorityQueue {
     }
 
     @Override
-    public Object deleteMin() {
+    public Object extractMin() {
         return null;
     }
 
