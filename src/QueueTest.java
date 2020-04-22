@@ -3,7 +3,35 @@ import org.junit.Test;
 
 public class QueueTest {
     @Test
-    public void testLockFreeQueue() throws InterruptedException {
+    public void testLockFreeQueueSequential() throws InterruptedException {
+        LockFreeQueue q = new LockFreeQueue();
+        int insert_count = 1;
+        for (int i = 1; i < 10; i++) {
+            int num_to_insert = 10 - i;
+            int num_to_del = i;
+            while (num_to_insert > 0) {
+                Assert.assertTrue(q.insert(insert_count, insert_count));
+                insert_count++;
+                num_to_insert--;
+            }
+            int last_min = 0;
+            while (num_to_del > 0) {
+                int min = (Integer) q.extractMin();
+                System.out.println("MIN: " + min);
+                Assert.assertTrue(min > last_min);
+                last_min = min;
+                num_to_del--;
+            }
+            LockFreeQueue.traverseDebug(q.head.getReference(), 0, "");
+        }
+        int min = (Integer) q.extractMin();
+        System.out.println("MIN: " + min);
+        Assert.assertEquals(min, -1);
+    }
+
+    @Test
+    public void testLockFreeQueueConcurrent() throws InterruptedException {
+
     }
 
     @Test

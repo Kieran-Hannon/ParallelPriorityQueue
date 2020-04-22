@@ -345,7 +345,7 @@ public class LockFreeQueue implements PriorityQueue {
      * @param dim initial dimension.
      * @param prefix initially empty string.
      */
-    private static void traverseDebug(Node n, int dim, String prefix) {
+    protected static void traverseDebug(Node n, int dim, String prefix) {
         if (n.val.getStamp() != 1) {    // is not deleted
             System.out.print(prefix);
             System.out.println("Node- key:" + n.key + ", dim " + dim);
