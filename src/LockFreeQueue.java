@@ -22,6 +22,20 @@ public class LockFreeQueue implements PriorityQueue {
         traverseDebug(q.head.getReference(), 0, "");
         System.out.println("MIN: " + q.extractMin());
         traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
+        System.out.println("MIN: " + q.extractMin());
+        traverseDebug(q.head.getReference(), 0, "");
 
 
     }
@@ -185,49 +199,49 @@ public class LockFreeQueue implements PriorityQueue {
         }
 
         int d = DIMENSION - 1;
-        while (d > 0) {
+        while (d >= 0) {
             Node last = s.node[d];
             finishInserting(last, d, d);
             Node child = last.child.get(d).getReference();
             if (child == null) {
-                d = d - 1;
+                d--;
                 continue;
             }
             int[] val_stamp = new int[1];
             Object val = child.val.get(val_stamp);
             if (val_stamp[0] != 0) {    // if marked as deleted
                 if (val == null) {
-                    mark = 0;
+                    mark++;
                     for (int i = d; i < DIMENSION; i++) {
                         s.node[i] = child;
                     }
                 } else {
-                    mark++;
-                    s.head.set((Node) val, 0);  // TODO: actually 0?
+                    mark = 0;
+                    s.head.set((Node) val, val_stamp[0] & ~1);
                     for (int i = 0; i < DIMENSION; i++) {
                         s.node[i] = s.head.getReference();
                     }
                 }
                 d = DIMENSION - 1;
-            } else if (child.val.compareAndSet(val, val, 0, 1)) {
+            } else if (child.val.compareAndSet(val, val, val_stamp[0], val_stamp[0] | 1)) {
                 // If logical deletion succeeds, child is min
-                for (int i = d; i < DIMENSION; i ++) {
+                for (int i = d; i < DIMENSION; i++) {
                     s.node[i] = child;
-                    min = child;
-                    if (!del_stack.compareAndSet(sOld, s)) {
-                        return -1;  // TODO: what to do if this CAS fails?
-                    }
-                    if (mark > R && purging.get() == null) {
-                        // Physical deletions
-                        if (purging.compareAndSet(null, s)) {
-                            if (s.head == head) {
-                                purge(s.head, s.node[DIMENSION - 1]);
-                            }
-                            purging.set(null);  // Done purging.
-                        }
-                    }
-                    break;
                 }
+                if (!del_stack.compareAndSet(sOld, s)) {
+                    return -1;  // TODO: what to do if this CAS fails?
+                }
+                if (mark > R && purging.get() == null) {
+                    // Physical deletions
+                    if (purging.compareAndSet(null, s)) {
+                        if (s.head == head) {
+                            purge(s.head, s.node[DIMENSION - 1]);
+                        }
+                        purging.set(null);  // Done purging.
+                    }
+                }
+                min = child;
+                break;
             }
 
         }
