@@ -1,13 +1,16 @@
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 public class QueueTest {
     @Test
     public void testLockFreeQueueSequential() throws InterruptedException {
+        // Test sequentially with ~500,000 insertions and deletions
         LockFreeQueue q = new LockFreeQueue();
         int insert_count = 1;
-        for (int i = 1; i < 10; i++) {
-            int num_to_insert = 10 - i;
+        for (int i = 1; i < 1000; i++) {
+            int num_to_insert = 1000 - i;
             int num_to_del = i;
             while (num_to_insert > 0) {
                 Assert.assertTrue(q.insert(insert_count, insert_count));
@@ -22,7 +25,6 @@ public class QueueTest {
                 last_min = min;
                 num_to_del--;
             }
-            LockFreeQueue.traverseDebug(q.head.getReference(), 0, "");
         }
         int min = (Integer) q.extractMin();
         System.out.println("MIN: " + min);
@@ -31,6 +33,52 @@ public class QueueTest {
 
     @Test
     public void testLockFreeQueueConcurrent() throws InterruptedException {
+        LockFreeQueue q = new LockFreeQueue();
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 1; i < 200; i ++) {
+            Thread t = new Thread(new Insert_Thread(i, i, q));
+            t.start();
+            threads.add(t);
+        }
+        for(Thread t:threads) {
+            t.join();
+        }
+        threads = new ArrayList<>();
+        ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
+        for (int i = 201; i < 300; i ++) {
+            Extract_Thread e = new Extract_Thread(q);
+            extract_threads.add(e);
+            Thread t = new Thread(e);
+            Thread t1 = new Thread(new Insert_Thread(i, i, q));
+            t.start();
+            t1.start();
+            threads.add(t);
+        }
+        for(Thread t:threads) {
+            t.join();
+        }
+        for(Extract_Thread t : extract_threads) {
+            System.out.println("Min was " + t.val);
+            Assert.assertTrue((Integer)t.val < 100 && (Integer)t.val > 0);
+        }
+        threads = new ArrayList<>();
+        extract_threads = new ArrayList<>();
+        for (int i = 1; i < 200; i ++) {
+            Extract_Thread e = new Extract_Thread(q);
+            extract_threads.add(e);
+            Thread t = new Thread(e);
+            t.start();
+            threads.add(t);
+        }
+        for(Thread t:threads) {
+            t.join();
+        }
+        for(Extract_Thread t : extract_threads) {
+            System.out.println("Min was " + t.val);
+            Assert.assertTrue((Integer)t.val < 300 && (Integer)t.val >= 100);
+        }
+        Assert.assertEquals((int) q.extractMin(), -1);
+
 
     }
 
@@ -72,7 +120,9 @@ public class QueueTest {
         }
         @Override
         public void run() {
-            q.insert(val, priority);
+            if (!q.insert(val, priority)) {
+                System.out.println("WARNING: FAILED TO ADD " + val);
+            }
         }
     }
 

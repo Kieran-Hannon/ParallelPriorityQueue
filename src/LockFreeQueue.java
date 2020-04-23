@@ -82,7 +82,7 @@ public class LockFreeQueue implements PriorityQueue {
                 while (curr != null && node.coord[curr_dim] > curr.coord[curr_dim]) {
                     pred = curr;
                     pred_dim = curr_dim;
-                    finishInserting(curr, pred_dim, curr_dim);
+                    finishInserting(curr, curr_dim, curr_dim);
                     curr = curr.child.get(curr_dim).get(curr_stamp_holder);
                 }
                 if (curr == null || node.coord[curr_dim] < curr.coord[curr_dim]) break;
@@ -198,6 +198,7 @@ public class LockFreeQueue implements PriorityQueue {
             s.node[i] = sOld.node[i];
         }
 
+        Object val = null;
         int d = DIMENSION - 1;
         while (d >= 0) {
             Node last = s.node[d];
@@ -208,26 +209,28 @@ public class LockFreeQueue implements PriorityQueue {
                 continue;
             }
             int[] val_stamp = new int[1];
-            Object val = child.val.get(val_stamp);
-            if (val_stamp[0] != 0) {    // if marked as deleted
+            val = child.val.get(val_stamp);
+            if (val_stamp[0] == 1) {    // if marked as deleted
                 if (val == null) {
                     mark++;
                     for (int i = d; i < DIMENSION; i++) {
                         s.node[i] = child;
                     }
+                    d = DIMENSION - 1;
                 } else {
                     mark = 0;
                     s.head.set((Node) val, val_stamp[0] & ~1);
                     for (int i = 0; i < DIMENSION; i++) {
                         s.node[i] = s.head.getReference();
                     }
+                    d = DIMENSION - 1;
                 }
-                d = DIMENSION - 1;
             } else if (child.val.compareAndSet(val, val, val_stamp[0], val_stamp[0] | 1)) {
                 // If logical deletion succeeds, child is min
                 for (int i = d; i < DIMENSION; i++) {
                     s.node[i] = child;
                 }
+                min = child;
                 if (!del_stack.compareAndSet(sOld, s)) {
                     return -1;  // TODO: what to do if this CAS fails?
                 }
@@ -240,7 +243,6 @@ public class LockFreeQueue implements PriorityQueue {
                         purging.set(null);  // Done purging.
                     }
                 }
-                min = child;
                 break;
             }
 
@@ -269,7 +271,6 @@ public class LockFreeQueue implements PriorityQueue {
         Node pvt = head.getReference();
         int dim = 0;
         while (dim < DIMENSION) {
-
             // Locate pivot
             boolean loc_pivot = false;
             int[] child_stamp = new int[1];
@@ -319,14 +320,14 @@ public class LockFreeQueue implements PriorityQueue {
         if (n == null) {
             return;
         }
-        AtomicReference<AdoptDesc> ad = n.adesc;
-        if (ad.get() == null || dc < ad.get().pred_dim || dp > ad.get().curr_dim) {
+        AdoptDesc ad = n.adesc.get();
+        if (ad == null || dc < ad.pred_dim || dp > ad.curr_dim) {
             return;
         }
         Node child;
-        Node curr = ad.get().curr;
-        dp = ad.get().pred_dim;
-        dc = ad.get().curr_dim;
+        Node curr = ad.curr;
+        dp = ad.pred_dim;
+        dc = ad.curr_dim;
         for (int i = dp; i < dc; i++) {
             int[] child_stamp = new int[1];
             child = curr.child.get(i).get(child_stamp);
