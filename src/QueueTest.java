@@ -2,6 +2,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class QueueTest {
     @Test
@@ -33,6 +34,11 @@ public class QueueTest {
 
     @Test
     public void testLockFreeQueueConcurrent() throws InterruptedException {
+        // Stage 1: Concurrent inserts
+        HashSet<Integer> set = new HashSet<>();
+        for (int i = 1; i < 300; i++) {
+            set.add(i);
+        }
         LockFreeQueue q = new LockFreeQueue();
         ArrayList<Thread> threads = new ArrayList<>();
         for (int i = 1; i < 200; i ++) {
@@ -43,6 +49,9 @@ public class QueueTest {
         for(Thread t:threads) {
             t.join();
         }
+        LockFreeQueue.traverseDebug(q.head.getReference(), 0, "");
+
+        // Stage 2: Concurrent inserts and deletes
         threads = new ArrayList<>();
         ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
         for (int i = 201; i < 300; i ++) {
@@ -60,7 +69,13 @@ public class QueueTest {
         for(Extract_Thread t : extract_threads) {
             System.out.println("Min was " + t.val);
             Assert.assertTrue((Integer)t.val < 100 && (Integer)t.val > 0);
+            if (set.contains((Integer)t.val)) {
+                set.remove(t.val);
+            }
         }
+
+
+        // Stage 3: concurrent deletes only
         threads = new ArrayList<>();
         extract_threads = new ArrayList<>();
         for (int i = 1; i < 200; i ++) {
@@ -76,8 +91,14 @@ public class QueueTest {
         for(Extract_Thread t : extract_threads) {
             System.out.println("Min was " + t.val);
             Assert.assertTrue((Integer)t.val < 300 && (Integer)t.val >= 100);
+            if (set.contains((Integer)t.val)) {
+                set.remove(t.val);
+            }
         }
-        Assert.assertEquals((int) q.extractMin(), -1);
+        Assert.assertEquals(-1, (int) q.extractMin());
+        for (Integer i : set) {
+            System.out.println("Failed to pop " + i);
+        }
 
 
     }

@@ -9,46 +9,19 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 //      Github: https://github.com/ucf-cs/CCSpec/blob/master/CCSpec/experiments/priority-queue/priorityqueue/mdlist/mdlist.cc
 
 public class LockFreeQueue implements PriorityQueue {
-    // Test main, delete later
+    // Delete later
     final static boolean DEBUG = true;
-    public static void main(String[] args) {
-        LockFreeQueue q = new LockFreeQueue();
-        for (int i = 1024; i >= 10; i >>= 1) {
-            q.insert(i, i);
-        }
-        for (int i = 1; i < 10; i++) {
-            q.insert(i, i);
-        }
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-        System.out.println("MIN: " + q.extractMin());
-        traverseDebug(q.head.getReference(), 0, "");
-
-
-    }
 
     final static int DIMENSION = 8; // 8-D Linked List
-    final static int R = 32;        // Threshold for physical deletions. TODO: might need to set below DIMENSION?
+    final static int R = 32;        // Threshold for physical deletions.    // TODO: Test with a lower value, like 4
 
     AtomicStampedReference<Node> head;    // Dummy head
     AtomicReference<Stack> del_stack;      // deletion stack.
-    AtomicReference<Stack> purging;
+    AtomicReference<Stack> purging;         // flag a stack if a thread is purging
 
     public LockFreeQueue() {
         head = new AtomicStampedReference<>(new Node(0, 0), 0);
+        head.getReference().purged.set(null, 1);    // Mark deleted
         del_stack = new AtomicReference<>(new Stack());
         del_stack.get().head = head;    // Set dummy head to stack head.
         for (int i = 0; i < DIMENSION; i ++) {
@@ -61,28 +34,26 @@ public class LockFreeQueue implements PriorityQueue {
     @Override
     public boolean insert(Object value, Integer priority) {
 
-        // priority = makeUnique(priority);    // make priority unique using rng, TODO: uncomment later
         if (DEBUG) System.out.println("INSERTING- key=" + priority + ", value=" + value);
 
         Stack s = new Stack();
         Node node = new Node(priority, value);
         keyToCoord8(node.key, node.coord);
+        Node pred = null;
+        int[] curr_stamp_holder = new int[1];
+        int[] head_version = new int[1];
+        Node curr = head.get(head_version);
+        int pred_dim = 0;
+        int curr_dim = 0;
+        s.head = new AtomicStampedReference<>(curr, head_version[0]);
 
         // Retry insertions until CAS successful
         while(true) {
-            Node pred = null;
-            int[] curr_stamp_holder = new int[1];
-            Node curr = head.get(curr_stamp_holder);
-            int pred_dim = 0;
-            int curr_dim = 0;
-            s.head = new AtomicStampedReference<>(curr, curr_stamp_holder[0]);
-
             // Locate Predecessor- search multidimensional LL.
             while(curr_dim < DIMENSION) {
                 while (curr != null && node.coord[curr_dim] > curr.coord[curr_dim]) {
                     pred = curr;
                     pred_dim = curr_dim;
-                    finishInserting(curr, curr_dim, curr_dim);
                     curr = curr.child.get(curr_dim).get(curr_stamp_holder);
                 }
                 if (curr == null || node.coord[curr_dim] < curr.coord[curr_dim]) break;
@@ -94,99 +65,153 @@ public class LockFreeQueue implements PriorityQueue {
 
             if (curr_dim == DIMENSION) return false;    // Unable to find location in 8 dimensions
 
-            finishInserting(curr, pred_dim, curr_dim);
-
-            // Fill new node
-            if (pred_dim < curr_dim) {
-                node.adesc.set(new AdoptDesc(curr, pred_dim, curr_dim));
+            // Finish pending insertions
+            AdoptDesc pending = pred.adesc.get();
+            if (pending != null && pred_dim >= pending.pred_dim && pred_dim <= pending.curr_dim) {
+                FinishInserting(pred, pending);
+                curr = pred;
+                curr_dim = pred_dim;
+                continue;
             }
-            for (int i = 0; i < pred_dim; i ++) {
-                node.child.get(i).set(null, 1);     // MARK: ADP-- mark for adoption
+            if (curr != null)   pending = curr.adesc.get();
+            else                pending = null;
+            if (pending != null && pred_dim != curr_dim) {
+                FinishInserting(curr, pending);
             }
-            node.child.get(curr_dim).set(curr, 0);
 
-            // Compare and swap attempt
-            if (pred.child.get(pred_dim).compareAndSet(curr, node, curr_stamp_holder[0], 0)) {
-                finishInserting(node, pred_dim, curr_dim);
-
-                // Rewind Stack- synchronize with deletions
-                Stack sOld = del_stack.get();
-                Stack sNew = new Stack();
-                boolean first_iter = true;
-                while (true) {
-                    // Case: head node unchanged
-                    if (s.head.getStamp() == sOld.head.getStamp()) {
-                        if (node.key <= sOld.node[DIMENSION - 1].key) {
-                            // Rewind stack to new node
-                            int[] s_stamp = new int[1];
-                            sNew.head.set(s.head.get(s_stamp), s_stamp[0]);
-                            for (int i = 0; i < pred_dim; i++) {
-                                sNew.node[i] = s.node[i];
-                            }
-                            for (int i = pred_dim; i < DIMENSION; i++) {
-                                sNew.node[i] = pred;
-                            }
-                        } else if (first_iter) {
-                            // copy sOld into sNew
-                            int[] sOld_stamp = new int[1];
-                            sNew.head.set(sOld.head.get(sOld_stamp), sOld_stamp[0]);
-                            for (int i = 0; i < DIMENSION; i ++) {
-                                sNew.node[i] = sOld.node[i];
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    // Case: current path head more recent than global stack head
-                    else if (s.head.getStamp() > sOld.head.getStamp()) {
-                        Node purged = (Node) sOld.head.getReference().val.getReference();
-                        if (purged.key < sOld.node[DIMENSION - 1].key) {
-                            // Rewind stack purged
-                            sNew.head.set((Node) purged.val.getReference(), 0);
-                            for (int i = 0; i < DIMENSION; i ++) {
-                                sNew.node[i] = sNew.head.getReference();
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    // Case: global stack head more recent than current path head
-                    else {
-                        Node purged = (Node) s.head.getReference().val.getReference();
-                        if (purged.key <= node.key) {
-                            sNew.head.set((Node) purged.val.getReference(), 0);
-                            for (int i = 0; i < DIMENSION; i++) {
-                                sNew.node[i] = sNew.head.getReference();
-                            }
-                        } else {
-                            // Rewind stack to new node
-                            int[] s_stamp = new int[1];
-                            sNew.head.set(s.head.get(s_stamp), s_stamp[0]);
-                            for (int i = 0; i < pred_dim; i++) {
-                                sNew.node[i] = s.node[i];
-                            }
-                            for (int i = pred_dim; i < DIMENSION; i++) {
-                                sNew.node[i] = pred;
-                            }
-                        }
-                    }
-                    // Exit if CAS succeeds or node was deleted
-                    if (del_stack.compareAndSet(sOld, sNew) || node.val.getStamp() == 1) {
-                        break;
-                    }
-                    first_iter = false;
-                    sOld = del_stack.get();
+            int[] pred_child_stamp = new int[1];
+            Node pred_child = pred.child.get(pred_dim).get(pred_child_stamp);
+            if (pred_child == curr) {
+                // Fill new node
+                AdoptDesc desc = null;
+                if (pred_dim != curr_dim) {
+                    desc = new AdoptDesc(curr, pred_dim, curr_dim);
                 }
-                break;
+                for (int i = 0; i < pred_dim; i++) {
+                    node.child.get(i).set(null, 1); // mark for adoption
+                }
+                for (int i = pred_dim; i < DIMENSION; i ++) {
+                    node.child.get(i).set(null, 0);
+                }
+                node.child.get(curr_dim).set(curr, 0);
+                node.adesc.set(desc);
+
+                // Attempt CAS
+                if (!pred.child.get(pred_dim).compareAndSet(curr, node, curr_stamp_holder[0], 0)) {
+                    pred_child = pred.child.get(pred_dim).get(curr_stamp_holder);
+                }
+                if (pred_child == curr) {
+                    if (desc != null) {
+                        FinishInserting(node, desc);
+                    }
+                    // If predecessor is deleted, rewind stack
+                    if ((pred.purged.getStamp() & 1) == 1 && (node.purged.getStamp() & 1) != 1) {
+                        Stack sOld = del_stack.get();
+                        Stack sNew = new Stack();
+                        Stack sExpected = null;
+                        while (true) {
+                            if (sOld.head.getReference() == s.head.getReference()) {
+                                if (priority <= sOld.node[DIMENSION - 1].key) {
+                                    // Rewind stack to new node
+                                    int[] s_stamp = new int[1];
+                                    sNew.head.set(s.head.get(s_stamp), s_stamp[0]);
+                                    for (int i = 0; i < pred_dim; i++) {
+                                        sNew.node[i] = s.node[i];
+                                    }
+                                    for (int i = pred_dim; i < DIMENSION; i++) {
+                                        sNew.node[i] = pred;
+                                    }
+                                } else if (sExpected == null) {
+                                    // copy sOld into sNew
+                                    int[] sOld_stamp = new int[1];
+                                    sNew.head.set(sOld.head.get(sOld_stamp), sOld_stamp[0]);
+                                    for (int i = 0; i < DIMENSION; i++) {
+                                        sNew.node[i] = sOld.node[i];
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                            // Case: current path head more recent than global stack head
+                            else if (s.head.getStamp() > sOld.head.getStamp()) {
+                                Node purged = sOld.head.getReference().purged.getReference();
+                                if (purged.key <= sOld.node[DIMENSION - 1].key) {
+                                    // Rewind stack purged
+                                    sNew.head.set(purged.purged.getReference(), 0);
+                                    for (int i = 0; i < DIMENSION; i++) {
+                                        sNew.node[i] = sNew.head.getReference();
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                            // Case: global stack head more recent than current path head
+                            else {
+                                Node purged = s.head.getReference().purged.getReference();
+                                if (purged.key <= node.key) {
+                                    sNew.head.set(purged.purged.getReference(), 0);
+                                    for (int i = 0; i < DIMENSION; i++) {
+                                        sNew.node[i] = sNew.head.getReference();
+                                    }
+                                } else {
+                                    // Rewind stack to new node
+                                    int[] s_stamp = new int[1];
+                                    sNew.head.set(s.head.get(s_stamp), s_stamp[0]);
+                                    for (int i = 0; i < pred_dim; i++) {
+                                        sNew.node[i] = s.node[i];
+                                    }
+                                    for (int i = pred_dim; i < DIMENSION; i++) {
+                                        sNew.node[i] = pred;
+                                    }
+                                }
+                            }
+                            sExpected = del_stack.get();
+                            Stack result = del_stack.compareAndExchange(sExpected, sNew);
+                            if (sExpected == result || (node.purged.getStamp() & 1) == 1) break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (pred_child_stamp[0] != 0) {
+                curr = head.get(head_version);
+                curr_dim = 0;
+                pred = null;
+                pred_dim = 0;
+                s.head.set(curr, head_version[0]);
+            } else {
+                curr = pred;
+                curr_dim = pred_dim;
             }
         }
         return true;
     }
 
+    private void FinishInserting(Node n, AdoptDesc desc) {
+        if (n == null || desc == null) return;
+        int dp = desc.pred_dim;
+        int dc = desc.curr_dim;
+        Node curr = desc.curr;
+        Node child;
+        for (int i = dp; i < dc; i++) {
+            int[] child_stamp = new int[1];
+            child = curr.child.get(i).get(child_stamp);
+            // Janky replacement for FetchAndOr to atomically get and set ADP flag.
+            while (!curr.child.get(i).compareAndSet(child, child, child_stamp[0], child_stamp[0] | 1)) {
+                child = curr.child.get(i).get(child_stamp);
+            }
+            n.child.get(i).compareAndSet(null, child, 0, 0);
+        }
+        n.adesc.set(null);
+    }
+
+
+
     @Override
     public Object extractMin() {
         if (DEBUG) System.out.println("DELETING MIN");
         Node min = null;
+        Node prg = null;
         Stack sOld = del_stack.get();
         int mark = 0;
 
@@ -198,42 +223,57 @@ public class LockFreeQueue implements PriorityQueue {
             s.node[i] = sOld.node[i];
         }
 
-        Object val = null;
         int d = DIMENSION - 1;
         while (d >= 0) {
             Node last = s.node[d];
-            finishInserting(last, d, d);
+            AdoptDesc pending = last.adesc.get();
+            if (pending != null && pending.pred_dim <= d && d < pending.curr_dim) {
+                FinishInserting(last, pending);
+            }
             Node child = last.child.get(d).getReference();
             if (child == null) {
                 d--;
                 continue;
             }
-            int[] val_stamp = new int[1];
-            val = child.val.get(val_stamp);
-            if (val_stamp[0] == 1) {    // if marked as deleted
-                if (val == null) {
+            int[] prg_stamp = new int[1];
+            prg = child.purged.get(prg_stamp);
+            if ((prg_stamp[0] & 1) == 1) {    // if marked as deleted
+                if (prg == null) {
                     mark++;
                     for (int i = d; i < DIMENSION; i++) {
                         s.node[i] = child;
                     }
                     d = DIMENSION - 1;
-                } else {
+                } else {                        // TODO: Should NEVER get here unless we purge
                     mark = 0;
-                    s.head.set((Node) val, val_stamp[0] & ~1);
+                    s.head.set(prg, prg_stamp[0] & ~1);
+//                    try {
+//                        System.out.println("Here!");
+//                        s.head.set((Node) val, val_stamp[0] & ~1);  // TODO: This line ALWAYS fails. WHY?
+//                    } catch(Exception e) {
+//                        System.out.println("FAILED TO REMOVE MIN");
+//                        System.out.println("Val: " + val);
+//                        System.out.println("Child key: " + child.key);
+//                        System.out.println("Last key: " + last.key + ", last val: " + last.val.getReference());
+//                        System.out.println("Dim: " + d);
+//                        System.out.println("Stack head: " + s.head.getReference().key);
+//                        System.out.println("Global stack head: " + sOld.head.getReference().key);
+//                        for (Node g : s.node) {
+//                            System.out.println(g.key);
+//                        }
+//                        System.out.println();
+//                    }
                     for (int i = 0; i < DIMENSION; i++) {
                         s.node[i] = s.head.getReference();
                     }
                     d = DIMENSION - 1;
                 }
-            } else if (child.val.compareAndSet(val, val, val_stamp[0], val_stamp[0] | 1)) {
+            } else if (child.purged.compareAndSet(prg, prg, 0, 1)) {
                 // If logical deletion succeeds, child is min
                 for (int i = d; i < DIMENSION; i++) {
                     s.node[i] = child;
                 }
-                min = child;
-                if (!del_stack.compareAndSet(sOld, s)) {
-                    return -1;  // TODO: what to do if this CAS fails?
-                }
+                del_stack.compareAndExchange(sOld, s);
                 if (mark > R && purging.get() == null) {
                     // Physical deletions
                     if (purging.compareAndSet(null, s)) {
@@ -243,11 +283,12 @@ public class LockFreeQueue implements PriorityQueue {
                         purging.set(null);  // Done purging.
                     }
                 }
+                min = child;
                 break;
             }
 
         }
-        if (min != null) return min.val.getReference();
+        if (min != null) return min.value;
         return -1;
     }
 
@@ -260,14 +301,14 @@ public class LockFreeQueue implements PriorityQueue {
         if (DEBUG) System.out.println("PURGING");
         if (hd != head) return;
         Node dummy = new Node(0, null);
-        dummy.val.set(null, 1);     // mark deleted
+        dummy.purged.set(null, 1);     // mark deleted
         AtomicStampedReference<Node> hd_new = new AtomicStampedReference<>(dummy, head.getStamp() + 1);
 
-        Node purge_cpy = new Node(prg.key, prg.val.getReference());
+        Node purge_cpy = new Node(prg.key, prg.purged.getReference());
         purge_cpy.coord = prg.coord.clone();
         purge_cpy.adesc.set(prg.adesc.get());
 
-        int purged_dim = -1;
+        int purged_dim = -1;                // TODO: What's this for?
         Node pvt = head.getReference();
         int dim = 0;
         while (dim < DIMENSION) {
@@ -305,8 +346,8 @@ public class LockFreeQueue implements PriorityQueue {
             }
             dim++;
         }
-        hd.getReference().val.set(prg, 1);
-        prg.val.set(hd_new, 1);
+        hd.getReference().purged.set(prg, 1);
+        prg.purged.set(hd_new.getReference(), 1);
         head = hd_new;
     }
 
@@ -347,7 +388,7 @@ public class LockFreeQueue implements PriorityQueue {
      * @param prefix initially empty string.
      */
     protected static void traverseDebug(Node n, int dim, String prefix) {
-        if (n.val.getStamp() != 1) {    // is not deleted
+        if (n.purged.getStamp() != 1) {    // is not deleted
             System.out.print(prefix);
             System.out.println("Node- key:" + n.key + ", dim " + dim);
         }
@@ -395,21 +436,24 @@ public class LockFreeQueue implements PriorityQueue {
         // A node in multi-dimensional linked list representing key-value pair.
 
         int key;    // priority
-        AtomicStampedReference<Object> val;    // value, marked with DEL for logical deletion (stamp = 1)
+        Object value;    // value
         ArrayList<AtomicStampedReference<Node>> child;  // Child nodes, stamped with ADP (stamp = 1) or PRG (stamp = 2).
         int[] coord = new int[DIMENSION];   // coordinates in 8D
         AtomicReference<AdoptDesc> adesc;  // adoption descriptor for thread helping.
+        AtomicStampedReference<Node> purged;
+
 
         // Note: missing seq and purged fields, don't think it's important but add later if necessary.
 
         public Node(int priority, Object value) {
             key = priority;
-            val = new AtomicStampedReference<>(value, 0);
+            this.value = value;
             child = new ArrayList<>(DIMENSION);
             for (int i = 0; i < DIMENSION; i ++) {
                 child.add(new AtomicStampedReference<Node>(null, 0));
             }
             adesc = new AtomicReference<>(null);
+            purged = new AtomicStampedReference<>(null, 0);
         }
     }
 
@@ -437,3 +481,8 @@ public class LockFreeQueue implements PriorityQueue {
 // TODO:
 // is it possible to copy entire stack atomically? might be important in both delete and insert.
 // if this causes issues, come back and ensure consistency after every global stack copy, and yield otherwise
+
+
+// Possible things to try
+// - atomically copy stack
+// - version field instead of head node
