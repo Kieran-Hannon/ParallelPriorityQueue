@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class LockFreeQueue implements PriorityQueue {
-    final static boolean DEBUG = true;
+    final static boolean DEBUG = false;
 
     final static int DIMENSION = 8; // 8-D Linked List
     final static int R = 4;        // Threshold for physical deletions.    // TODO: Test with a lower value, like 4
@@ -104,7 +104,7 @@ public class LockFreeQueue implements PriorityQueue {
                     }
                     // Case: current path head more recent than global stack head
                     else if (s.head.getStamp() > sOld.head.getStamp()) {
-                        Node purged = (Node) sOld.head.getReference().purged.getReference();
+                        Node purged = sOld.head.getReference().purged.getReference();
                         if (purged.key < sOld.node[DIMENSION - 1].key) {
                             // Rewind stack purged
                             sNew.head.set((Node) purged.purged.getReference(), 0);
