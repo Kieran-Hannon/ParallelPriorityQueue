@@ -2,7 +2,7 @@
 EE 361C Final Project
 Juan Paez, Kieran Hannon, Zachary Chilton, and Ankur Kaushik
 
-##Task:
+## Task:
 Implement fine grained lock-based and lock-free priority queue algorithms. Compare the performance of lock-based and lock-free algorithms.
 
 ## Fine Grained Lock-Based Priority Queue: LockQueue.java
