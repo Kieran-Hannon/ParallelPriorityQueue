@@ -95,6 +95,28 @@ public class QueueTest {
     }
 
     @Test
+    public void testLockQueueSequential() {
+        int numberOfElements = 50;
+
+        LockQueue q = new LockQueue(numberOfElements);
+
+        for (int i = 0; i < numberOfElements; i++)
+            q.insert(i, i);
+
+        int[] expected = new int[numberOfElements];
+
+        for (int i = 0; i < numberOfElements; i++)
+            expected[i] = i;
+
+        int[] actual = new int[numberOfElements];
+
+        for (int i = 0; i < numberOfElements; i++)
+            actual[i] = (Integer)(q.extractMin());
+
+        Assert.assertArrayEquals(expected, actual);
+    }
+
+    @Test
     public void testLockQueueInsert() {
         int numberOfThreads = 10000;
 
@@ -121,7 +143,8 @@ public class QueueTest {
         Assert.assertArrayEquals(expected, actual);
     }
 
-    @Test public void testLockQueueDelete() {
+    @Test
+    public void testLockQueueDelete() {
         int numberOfThreads = 10000;
 
         LockQueue q = new LockQueue(numberOfThreads);

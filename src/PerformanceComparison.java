@@ -13,19 +13,21 @@ public class PerformanceComparison {
         System.out.println("**************************************************************\n");
         System.out.println("Using " + num_threads + " threads\n");
 
+        System.out.println("Beginning lock-based test");
+        PriorityQueue lockBased = new LockQueue(1000000);
+        long start = System.currentTimeMillis();
+        TestQueue(lockBased, num_threads);
+        long lockBasedTime = System.currentTimeMillis() - start;
+        System.out.println("Lock-based queue took " + lockBasedTime + " milliseconds\n");
+
         System.out.println("Beginning lock-free test");
         PriorityQueue lockFree = new LockFreeQueue();
-        long start = System.currentTimeMillis();
+        start = System.currentTimeMillis();
         TestQueue(lockFree, num_threads);
         long lockFreeTime = System.currentTimeMillis() - start;
         System.out.println("Lock-based queue took " + lockFreeTime + " milliseconds\n");
 
-        System.out.println("Beginning lock-based test");
-        PriorityQueue lockBased = new LockQueue(10000000);
-        start = System.currentTimeMillis();
-        TestQueue(lockBased, num_threads);
-        long lockBasedTime = System.currentTimeMillis() - start;
-        System.out.println("Lock-based queue took " + lockBasedTime + " milliseconds\n");
+
 
     }
 
