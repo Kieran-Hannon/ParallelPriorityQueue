@@ -21,14 +21,12 @@ public class QueueTest {
             int last_min = 0;
             while (num_to_del > 0) {
                 int min = (Integer) q.extractMin();
-                System.out.println("MIN: " + min);
                 Assert.assertTrue(min > last_min);
                 last_min = min;
                 num_to_del--;
             }
         }
         int min = (Integer) q.extractMin();
-        System.out.println("MIN: " + min);
         Assert.assertEquals(min, -1);
     }
 
@@ -36,12 +34,12 @@ public class QueueTest {
     public void testLockFreeQueueConcurrent() throws InterruptedException {
         // Stage 1: Concurrent inserts
         HashSet<Integer> set = new HashSet<>();
-        for (int i = 1; i < 299; i++) {
+        for (int i = 1; i < 29999; i++) {
             set.add(i);
         }
         LockFreeQueue q = new LockFreeQueue();
         ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 1; i < 200; i ++) {
+        for (int i = 1; i < 20000; i ++) {
             Thread t = new Thread(new Insert_Thread(i, i, q));
             t.start();
             threads.add(t);
@@ -49,12 +47,11 @@ public class QueueTest {
         for(Thread t:threads) {
             t.join();
         }
-        LockFreeQueue.traverseDebug(q.head.getReference(), 0, "");
 
         // Stage 2: Concurrent inserts and deletes
         threads = new ArrayList<>();
         ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
-        for (int i = 200; i < 299; i ++) {
+        for (int i = 20000; i < 29999; i ++) {
             Extract_Thread e = new Extract_Thread(q);
             extract_threads.add(e);
             Thread t = new Thread(e);
@@ -67,18 +64,16 @@ public class QueueTest {
             t.join();
         }
         for(Extract_Thread t : extract_threads) {
-            System.out.println("Min was " + t.val);
-            Assert.assertTrue((Integer)t.val < 100 && (Integer)t.val > 0);
+            Assert.assertTrue((Integer)t.val < 10000 && (Integer)t.val > 0);
             if (set.contains(t.val)) {
                 set.remove(t.val);
             }
         }
 
-
         // Stage 3: concurrent deletes only
         threads = new ArrayList<>();
         extract_threads = new ArrayList<>();
-        for (int i = 1; i < 200; i ++) {
+        for (int i = 1; i < 20000; i ++) {
             Extract_Thread e = new Extract_Thread(q);
             extract_threads.add(e);
             Thread t = new Thread(e);
@@ -89,8 +84,7 @@ public class QueueTest {
             t.join();
         }
         for(Extract_Thread t : extract_threads) {
-            System.out.println("Min was " + t.val);
-            Assert.assertTrue((Integer)t.val < 300 && (Integer)t.val >= 100);
+            Assert.assertTrue((Integer)t.val < 30000 && (Integer)t.val >= 10000);
             set.remove(t.val);
         }
         Assert.assertEquals(-1, (int) q.extractMin());
@@ -159,5 +153,4 @@ public class QueueTest {
             return val;
         }
     }
-
 }

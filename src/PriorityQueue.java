@@ -12,5 +12,4 @@ public interface PriorityQueue {
      * @return value of highest priority element.
      */
     Object extractMin();
-
 }
