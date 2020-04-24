@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class LockFreeQueue implements PriorityQueue {
-    final static boolean DEBUG = false;
+    final static boolean DEBUG = true;
 
     final static int DIMENSION = 8; // 8-D Linked List
     final static int R = 4;        // Threshold for physical deletions.    // TODO: Test with a lower value, like 4

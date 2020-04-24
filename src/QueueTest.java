@@ -34,7 +34,7 @@ public class QueueTest {
     public void testLockFreeQueueConcurrent() throws InterruptedException {
         // Stage 1: Concurrent inserts
         HashSet<Integer> set = new HashSet<>();
-        for (int i = 1; i < 29999; i++) {
+        for (int i = 1; i < 20000; i++) {
             set.add(i);
         }
         LockFreeQueue q = new LockFreeQueue();
@@ -51,7 +51,7 @@ public class QueueTest {
         // Stage 2: Concurrent inserts and deletes
         threads = new ArrayList<>();
         ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
-        for (int i = 20000; i < 29999; i ++) {
+        for (int i = 20000; i < 30000; i ++) {
             Extract_Thread e = new Extract_Thread(q);
             extract_threads.add(e);
             Thread t = new Thread(e);
@@ -64,7 +64,7 @@ public class QueueTest {
             t.join();
         }
         for(Extract_Thread t : extract_threads) {
-            Assert.assertTrue((Integer)t.val < 10000 && (Integer)t.val > 0);
+            Assert.assertTrue((Integer)t.val < 20000 && (Integer)t.val > 0);
             if (set.contains(t.val)) {
                 set.remove(t.val);
             }
