@@ -36,7 +36,7 @@ public class QueueTest {
     public void testLockFreeQueueConcurrent() throws InterruptedException {
         // Stage 1: Concurrent inserts
         HashSet<Integer> set = new HashSet<>();
-        for (int i = 1; i < 300; i++) {
+        for (int i = 1; i < 299; i++) {
             set.add(i);
         }
         LockFreeQueue q = new LockFreeQueue();
@@ -54,7 +54,7 @@ public class QueueTest {
         // Stage 2: Concurrent inserts and deletes
         threads = new ArrayList<>();
         ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
-        for (int i = 201; i < 300; i ++) {
+        for (int i = 200; i < 299; i ++) {
             Extract_Thread e = new Extract_Thread(q);
             extract_threads.add(e);
             Thread t = new Thread(e);
@@ -69,7 +69,7 @@ public class QueueTest {
         for(Extract_Thread t : extract_threads) {
             System.out.println("Min was " + t.val);
             Assert.assertTrue((Integer)t.val < 100 && (Integer)t.val > 0);
-            if (set.contains((Integer)t.val)) {
+            if (set.contains(t.val)) {
                 set.remove(t.val);
             }
         }
@@ -91,16 +91,13 @@ public class QueueTest {
         for(Extract_Thread t : extract_threads) {
             System.out.println("Min was " + t.val);
             Assert.assertTrue((Integer)t.val < 300 && (Integer)t.val >= 100);
-            if (set.contains((Integer)t.val)) {
-                set.remove(t.val);
-            }
+            set.remove(t.val);
         }
         Assert.assertEquals(-1, (int) q.extractMin());
         for (Integer i : set) {
             System.out.println("Failed to pop " + i);
         }
-
-
+        Assert.assertTrue(set.isEmpty());
     }
 
     @Test
