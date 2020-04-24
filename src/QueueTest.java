@@ -95,7 +95,7 @@ public class QueueTest {
     }
 
     @Test
-    public void testLockQueue() throws InterruptedException {
+    public void testLockQueueInsert() {
         int numberOfThreads = 10000;
 
         LockQueue q = new LockQueue(numberOfThreads);
@@ -116,9 +116,28 @@ public class QueueTest {
         int[] actual = new int[numberOfThreads];
 
         for (int i = 0; i < numberOfThreads; i++)
-            actual[i] = (Integer)((LockQueue.Node) q.extractMin()).value;
+            actual[i] = (Integer)(q.extractMin());
 
         Assert.assertArrayEquals(expected, actual);
+    }
+
+    @Test public void testLockQueueDelete() {
+        int numberOfThreads = 10000;
+
+        LockQueue q = new LockQueue(numberOfThreads);
+
+        for (int i = 0; i < numberOfThreads; i++)
+            q.insert(i, i);
+
+        Runnable[] deleters = new Runnable[numberOfThreads];
+
+        for (int i = 0; i < numberOfThreads; i++)
+            deleters[i] = new Extract_Thread(q);
+
+        for (int i = 0; i < numberOfThreads; i++)
+            deleters[i].run();
+
+        Assert.assertEquals(0, q.size());
     }
 
     static class Insert_Thread implements Runnable {

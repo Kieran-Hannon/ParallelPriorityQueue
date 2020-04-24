@@ -8,6 +8,10 @@ public class LockQueue implements PriorityQueue {
 
     private Lock[] L;
 
+    public int size() {
+        return last;
+    }
+
     public LockQueue(int length) {
         this.length = length;
         this.A = new Node[length + 1];
@@ -71,7 +75,7 @@ public class LockQueue implements PriorityQueue {
             else
                 bubbleDown(A[1]);
         }
-        return min;
+        return min.value;
     }
 
     private void bubbleUp(Node node) {
