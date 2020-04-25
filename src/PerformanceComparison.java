@@ -1,4 +1,3 @@
-import org.junit.Assert;
 import java.util.ArrayList;
 
 public class PerformanceComparison {
@@ -14,7 +13,7 @@ public class PerformanceComparison {
         System.out.println("Using " + num_threads + " threads\n");
 
         System.out.println("Beginning lock-based test");
-        PriorityQueue lockBased = new LockQueue(1000000);
+        PriorityQueue lockBased = new LockQueue();
         long start = System.currentTimeMillis();
         TestQueue(lockBased, num_threads);
         long lockBasedTime = System.currentTimeMillis() - start;
@@ -26,9 +25,6 @@ public class PerformanceComparison {
         TestQueue(lockFree, num_threads);
         long lockFreeTime = System.currentTimeMillis() - start;
         System.out.println("Lock-based queue took " + lockFreeTime + " milliseconds\n");
-
-
-
     }
 
     private static void TestQueue(PriorityQueue q, int num_threads) throws InterruptedException {

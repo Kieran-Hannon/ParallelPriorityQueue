@@ -7,7 +7,7 @@ public class LockFreeQueue implements PriorityQueue {
     final static boolean DEBUG = false;
 
     final static int DIMENSION = 8; // 8-D Linked List
-    final static int R = 4;        // Threshold for physical deletions.    // TODO: Test with a lower value, like 4
+    final static int R = 4;        // Threshold for physical deletions.
 
     AtomicStampedReference<Node> head;  // Dummy head
     AtomicReference<Stack> del_stack;   // global deletion stack.
@@ -216,8 +216,7 @@ public class LockFreeQueue implements PriorityQueue {
             }
 
         }
-        if (min != null) return min.value;
-        return -1;
+        return min == null ? null : min.value;
     }
 
     /**
@@ -256,7 +255,7 @@ public class LockFreeQueue implements PriorityQueue {
      * @param prg reference node for purge.
      */
     private void purge(AtomicStampedReference<Node> hd, Node prg) {
-        System.out.println("PURGING");
+        // System.out.println("PURGING");
         if (hd != head) return;
         Node dummy = new Node(0, null);
         dummy.purged.set(null, 1);     // mark deleted

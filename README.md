@@ -17,7 +17,7 @@ logical deletions from physical deletions in order to "delete" a node without wo
 stuck there.
 The insert operation computes the target coordinates of the new node to be inserted and finds its predecessor.
 It then uses pointer swinging to atomically insert the node at the proper location. The notion of child adoption is used
-to help other threads finish incomplete insertions, thus ensuring that the algorithm is truly wait-free.
+to help other threads finish incomplete insertions.
 Since the algorithm only supports unique values, we have also provided a makeUnique function that uses a random-number
 generator to convert a non-unique 16-bit integer into a unique 31-bit unsigned integer. Note also that the priority
 of 0 is reserved for the head value.
@@ -45,3 +45,13 @@ So to use instances of our queues, q.insert(value, priority) and min = q.extract
 We also demonstrate sequential and concurrent uses and tests in QueueTest.java using the JUnit framework.
 
 ## Performance Comparison:
+We provide a performance comparison script in PerformanceComparison.java. If you would like to run it yourself, simply
+compile this file and execute the resulting runnable. An optional command-line argument may be used to specify the
+number of threads to be used.
+
+The performance comparison operates in three sequential stages. Each stage's work is split among num_threads threads.
+1. Concurrently insert 1,000,000 elements.
+2. Concurrently insert AND delete 1,000,000 elements.
+3. Concurrently delete 1,000,000 elements.
+
+TODO: Include results
