@@ -1,4 +1,4 @@
-public interface PriorityQueue {
+public interface MyPriorityQueue {
     /**
      * Insert a value into the queue with an assigned priority.
      * @param value integer value of the element.

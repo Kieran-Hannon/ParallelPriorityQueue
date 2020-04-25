@@ -1,7 +1,7 @@
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LockQueue implements PriorityQueue {
+public class LockQueue implements MyPriorityQueue {
     private int length;
     private Element[] A;
     private Lock[] L;

@@ -2,32 +2,30 @@ import java.util.ArrayList;
 
 public class PerformanceComparison {
     public static void main(String[] args) throws InterruptedException {
-        int num_threads = 4;
-        if(args.length > 0) {
-            num_threads = Integer.parseInt(args[0]);
-        }
-
         System.out.println("**************************************************************");
         System.out.println("********************PERFORMANCE COMPARISON********************");
         System.out.println("**************************************************************\n");
-        System.out.println("Using " + num_threads + " threads\n");
 
-        System.out.println("Beginning lock-based test");
-        PriorityQueue lockBased = new LockQueue();
-        long start = System.currentTimeMillis();
-        TestQueue(lockBased, num_threads);
-        long lockBasedTime = System.currentTimeMillis() - start;
-        System.out.println("Lock-based queue took " + lockBasedTime + " milliseconds\n");
+        for (int num_threads = 1; num_threads <= 16; num_threads++) {
+            System.out.println("Using " + num_threads + " threads\n");
 
-        System.out.println("Beginning lock-free test");
-        PriorityQueue lockFree = new LockFreeQueue();
-        start = System.currentTimeMillis();
-        TestQueue(lockFree, num_threads);
-        long lockFreeTime = System.currentTimeMillis() - start;
-        System.out.println("Lock-based queue took " + lockFreeTime + " milliseconds\n");
+            System.out.println("Beginning lock-based test");
+            MyPriorityQueue lockBased = new LockQueue();
+            long start = System.currentTimeMillis();
+            TestQueue(lockBased, num_threads);
+            long lockBasedTime = System.currentTimeMillis() - start;
+            System.out.println("Lock-based queue took " + lockBasedTime + " milliseconds\n");
+
+            System.out.println("Beginning lock-free test");
+            MyPriorityQueue lockFree = new LockFreeQueue();
+            start = System.currentTimeMillis();
+            TestQueue(lockFree, num_threads);
+            long lockFreeTime = System.currentTimeMillis() - start;
+            System.out.println("Lock-based queue took " + lockFreeTime + " milliseconds\n");
+        }
     }
 
-    private static void TestQueue(PriorityQueue q, int num_threads) throws InterruptedException {
+    private static void TestQueue(MyPriorityQueue q, int num_threads) throws InterruptedException {
         int num_ops = 1000000;
         int chunk_size = num_ops/num_threads;
         int last_size = num_ops - (chunk_size*(num_threads - 1));   // for rounding errors
@@ -85,17 +83,16 @@ public class PerformanceComparison {
 
 
     static class Insert_Thread implements Runnable {
-        PriorityQueue q;
+        MyPriorityQueue q;
         int num_insertions;
         int start_idx;
-        public Insert_Thread(PriorityQueue q, int num_insertions, int start_idx) {
+        public Insert_Thread(MyPriorityQueue q, int num_insertions, int start_idx) {
             this.q = q;
             this.num_insertions = num_insertions;
             this.start_idx = start_idx;
         }
         @Override
         public void run() {
-            System.out.println("Thread " + Thread.currentThread().getId() + " inserting from " + start_idx + " to "  + (num_insertions + start_idx - 1));
             for (int i = start_idx; i < start_idx + num_insertions; i ++) {
                 q.insert(i, i);
             }
@@ -103,15 +100,14 @@ public class PerformanceComparison {
     }
 
     static class Extract_Thread implements Runnable {
-        PriorityQueue q;
+        MyPriorityQueue q;
         int num_deletions;
-        public Extract_Thread(PriorityQueue q, int num_deletions) {
+        public Extract_Thread(MyPriorityQueue q, int num_deletions) {
             this.q = q;
             this.num_deletions = num_deletions;
         }
         @Override
         public void run() {
-            System.out.println("Thread " + Thread.currentThread().getId() + " removing " + num_deletions + " elements");
             for (int i = 0; i < num_deletions; i ++) {
                 q.extractMin();
             }
@@ -120,16 +116,15 @@ public class PerformanceComparison {
 
     static class ConcurrentThread implements Runnable {
         int num;
-        PriorityQueue q;
+        MyPriorityQueue q;
         int start_idx;
-        public ConcurrentThread(PriorityQueue q, int num, int start_idx) {
+        public ConcurrentThread(MyPriorityQueue q, int num, int start_idx) {
             this.num = num;
             this.q = q;
             this.start_idx = start_idx;
         }
         @Override
         public void run() {
-            System.out.println("Thread " + Thread.currentThread().getId() + " inserting from " + start_idx + " to "  + (start_idx + num - 1) + " and deleting " + num + " elements");
             for (int i = start_idx; i < start_idx + num; i ++) {
                 q.extractMin();
                 q.insert(i, i);

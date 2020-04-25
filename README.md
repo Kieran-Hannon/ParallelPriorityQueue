@@ -6,6 +6,12 @@ Juan Paez, Kieran Hannon, Zachary Chilton, and Ankur Kaushik
 Implement fine grained lock-based and lock-free priority queue algorithms. Compare the performance of lock-based and lock-free algorithms.
 
 ## Fine Grained Lock-Based Priority Queue: LockQueue.java
+Our implementation of the fine-grained lock priority queue is based on the following paper by Tamir, Morrison, and Rinetzky:
+https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf
+
+It uses the classical heap structure, locking only nodes being compared/swapped during heapify operations. We assign
+a reentrant lock to each element and lock it each time the element is being modified during an insertion or deletion.
+The primary bottleneck occurs during deletions, where many nodes contend for the lock of the root node in the heap.
 
 ## Lock Free Priority Queue: LockFreeQueue.java
 Our implementation of the lock-free priority queue is based on the following paper by Zhang and Dechev:

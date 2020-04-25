@@ -3,11 +3,10 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
-public class LockFreeQueue implements PriorityQueue {
+public class LockFreeQueue implements MyPriorityQueue {
     final static boolean DEBUG = false;
-
     final static int DIMENSION = 8; // 8-D Linked List
-    final static int R = 4;        // Threshold for physical deletions.
+    final static int R = 32;        // Threshold for physical deletions.
 
     AtomicStampedReference<Node> head;  // Dummy head
     AtomicReference<Stack> del_stack;   // global deletion stack.
@@ -56,7 +55,10 @@ public class LockFreeQueue implements PriorityQueue {
                 }
             }
 
-            if (curr_dim == DIMENSION) return false;    // Unable to find location in 8 dimensions
+            if (curr_dim == DIMENSION) {
+                if (DEBUG) System.out.println("WARNING: Failed to find location for insertion.");
+                return false;    // Unable to find location in 8 dimensions}
+            }
 
             // Help previous unfinished insertions, if available
             finishInserting(curr, pred_dim, curr_dim);
@@ -216,6 +218,7 @@ public class LockFreeQueue implements PriorityQueue {
             }
 
         }
+        if (DEBUG) System.out.println("FOUND MIN: " + (min == null ? null : min.value));
         return min == null ? null : min.value;
     }
 
@@ -255,7 +258,7 @@ public class LockFreeQueue implements PriorityQueue {
      * @param prg reference node for purge.
      */
     private void purge(AtomicStampedReference<Node> hd, Node prg) {
-        // System.out.println("PURGING");
+        if (DEBUG) System.out.println("PURGING");
         if (hd != head) return;
         Node dummy = new Node(0, null);
         dummy.purged.set(null, 1);     // mark deleted
@@ -395,7 +398,3 @@ public class LockFreeQueue implements PriorityQueue {
         AtomicStampedReference<Node> head = new AtomicStampedReference<>(null, 0);
     }
 }
-
-// TODO
-// - verify purge is correct
-// - compare performances
