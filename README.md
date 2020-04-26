@@ -52,12 +52,12 @@ We also demonstrate sequential and concurrent uses and tests in QueueTest.java u
 
 ## Performance Comparison:
 We provide a performance comparison script in PerformanceComparison.java. If you would like to run it yourself, simply
-compile this file and execute the resulting runnable, which runs the performance comparison with 1 to 16 threads.
+compile and execute src/PerformanceComparison.java, which runs the performance comparison with 1 to 16 threads.
 
 The performance comparison operates in three sequential stages. Each stage's work is split among num_threads threads.
 1. Concurrently insert 1,000,000 elements.
 2. Concurrently insert AND delete 1,000,000 elements.
 3. Concurrently delete 1,000,000 elements.
 
-Results of performance comparison run on kakek.ece.utexas.edu
+Results of performance comparison a 4-core machine:
 ![Results](https://github.com/juanpaez22/ParallelPriorityQueue/blob/master/results/Parallel%20Priority%20Queue%20Results.JPG)
