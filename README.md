@@ -59,4 +59,5 @@ The performance comparison operates in three sequential stages. Each stage's wor
 2. Concurrently insert AND delete 1,000,000 elements.
 3. Concurrently delete 1,000,000 elements.
 
+Results of performance comparison run on kakek.ece.utexas.edu
 ![Results](https://github.com/juanpaez22/ParallelPriorityQueue/blob/master/results/Parallel%20Priority%20Queue%20Results.JPG)
