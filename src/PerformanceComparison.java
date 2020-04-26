@@ -21,7 +21,7 @@ public class PerformanceComparison {
             start = System.currentTimeMillis();
             TestQueue(lockFree, num_threads);
             long lockFreeTime = System.currentTimeMillis() - start;
-            System.out.println("Lock-based queue took " + lockFreeTime + " milliseconds\n");
+            System.out.println("Lock-free queue took " + lockFreeTime + " milliseconds\n");
         }
     }
 
