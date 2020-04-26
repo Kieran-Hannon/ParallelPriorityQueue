@@ -52,8 +52,7 @@ We also demonstrate sequential and concurrent uses and tests in QueueTest.java u
 
 ## Performance Comparison:
 We provide a performance comparison script in PerformanceComparison.java. If you would like to run it yourself, simply
-compile this file and execute the resulting runnable. An optional command-line argument may be used to specify the
-number of threads to be used.
+compile this file and execute the resulting runnable, which runs the performance comparison with 1 to 16 threads.
 
 The performance comparison operates in three sequential stages. Each stage's work is split among num_threads threads.
 1. Concurrently insert 1,000,000 elements.
