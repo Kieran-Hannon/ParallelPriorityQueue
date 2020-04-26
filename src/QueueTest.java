@@ -1,25 +1,9 @@
 import org.junit.Assert;
 import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class QueueTest {
-    @Test
-    public void testLockFreeReverseInserts() {
-        LockFreeQueue q = new LockFreeQueue();
-        for (int i = 1000; i > 0; i --) {
-            q.insert(i, i);
-        }
-        int min = 0;
-        for (int i = 1000; i > 0; i --) {
-            int local_min = (Integer) q.extractMin();
-            Assert.assertTrue(local_min > min);
-            min = local_min;
-        }
-        Assert.assertNull(q.extractMin());
-    }
-
 
     @Test
     public void testLockFreeQueueSequential() {
@@ -41,7 +25,7 @@ public class QueueTest {
                 num_to_del--;
             }
         }
-        Assert.assertNull(q.extractMin());
+        Assert.assertNull(q.extractMin());  // should be empty
     }
 
     @Test
@@ -63,6 +47,21 @@ public class QueueTest {
     }
 
     @Test
+    public void testLockFreeReverseInserts() {
+        LockFreeQueue q = new LockFreeQueue();
+        for (int i = 1000; i > 0; i --) {
+            q.insert(i, i);
+        }
+        int min = 0;
+        for (int i = 1000; i > 0; i --) {
+            int local_min = (Integer) q.extractMin();
+            Assert.assertTrue(local_min > min);
+            min = local_min;
+        }
+        Assert.assertNull(q.extractMin());
+    }
+
+    @Test
     public void testLockFreeQueueDelete() {
         int numberOfThreads = 1000;
         MyPriorityQueue q = new LockFreeQueue();
@@ -77,7 +76,60 @@ public class QueueTest {
     }
 
     @Test
-    public void testLockFreeQueueConcurrent() throws InterruptedException {
+    public void testLockFreeQueueParallelInsert() throws InterruptedException {
+        MyPriorityQueue q = new LockFreeQueue();
+
+        // Parallel insertions
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 1; i <= 200; i ++) {
+            Thread t = new Thread(new Insert_Thread(i, i, q));
+            t.start();
+            threads.add(t);
+        }
+        for (Thread t : threads) t.join();
+
+        // Sequential deletions
+        int prev_min = 0;
+        for (int i = 1; i <= 200; i ++) {
+            int min = (Integer) q.extractMin();
+            Assert.assertTrue(prev_min < min);
+            prev_min = min;
+        }
+        Assert.assertNull(q.extractMin());
+    }
+
+    @Test
+    public void testLockFreeQueueParallelDeletions() throws InterruptedException {
+        MyPriorityQueue q = new LockFreeQueue();
+        HashSet<Integer> set = new HashSet<>();
+
+        // Sequential insertions
+        for (int i = 1; i <= 200; i ++) {
+            q.insert(i, i);
+            set.add(i);
+        }
+
+        // Parallel deletions
+        ArrayList<Thread> threads = new ArrayList<>();
+        ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
+        for (int i = 1; i <= 200; i ++) {
+            Extract_Thread e = new Extract_Thread(q);
+            extract_threads.add(e);
+            Thread t = new Thread(e);
+            t.start();
+            threads.add(t);
+        }
+        for (Thread t : threads) t.join();
+        for (Extract_Thread e : extract_threads) {
+            Assert.assertTrue(set.contains(e.val));
+            set.remove(e.val);
+        }
+        Assert.assertTrue(set.isEmpty());
+        Assert.assertNull(q.extractMin());
+    }
+
+    @Test
+    public void testLockFreeQueueConcurrentAll() throws InterruptedException {
         // Stage 1: Concurrent inserts
         HashSet<Integer> set = new HashSet<>();
         for (int i = 1; i < 300; i++) {
@@ -189,7 +241,60 @@ public class QueueTest {
     }
 
     @Test
-    public void testLockQueueConcurrent() throws InterruptedException {
+    public void testLockQueueParallelInsert() throws InterruptedException {
+        MyPriorityQueue q = new LockQueue();
+
+        // Parallel insertions
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 1; i <= 200; i ++) {
+            Thread t = new Thread(new Insert_Thread(i, i, q));
+            t.start();
+            threads.add(t);
+        }
+        for (Thread t : threads) t.join();
+
+        // Sequential deletions
+        int prev_min = 0;
+        for (int i = 1; i <= 200; i ++) {
+            int min = (Integer) q.extractMin();
+            Assert.assertTrue(prev_min < min);
+            prev_min = min;
+        }
+        Assert.assertNull(q.extractMin());
+    }
+
+    @Test
+    public void testLockQueueParallelDeletions() throws InterruptedException {
+        MyPriorityQueue q = new LockQueue();
+        HashSet<Integer> set = new HashSet<>();
+
+        // Sequential insertions
+        for (int i = 1; i <= 200; i ++) {
+            q.insert(i, i);
+            set.add(i);
+        }
+
+        // Parallel deletions
+        ArrayList<Thread> threads = new ArrayList<>();
+        ArrayList<Extract_Thread> extract_threads = new ArrayList<>();
+        for (int i = 1; i <= 200; i ++) {
+            Extract_Thread e = new Extract_Thread(q);
+            extract_threads.add(e);
+            Thread t = new Thread(e);
+            t.start();
+            threads.add(t);
+        }
+        for (Thread t : threads) t.join();
+        for (Extract_Thread e : extract_threads) {
+            Assert.assertTrue(set.contains(e.val));
+            set.remove(e.val);
+        }
+        Assert.assertTrue(set.isEmpty());
+        Assert.assertNull(q.extractMin());
+    }
+
+    @Test
+    public void testLockQueueConcurrentAll() throws InterruptedException {
         // Stage 1: Concurrent inserts
         HashSet<Integer> set = new HashSet<>();
         for (int i = 1; i < 300; i++) {
@@ -252,7 +357,9 @@ public class QueueTest {
         Assert.assertTrue(set.isEmpty());
     }
 
-
+    // *****************************************************
+    // Classes used to start insertion and deletion threads.
+    // *****************************************************
 
     static class Insert_Thread implements Runnable {
         Object val;
