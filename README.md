@@ -5,6 +5,9 @@ Juan Paez, Kieran Hannon, Zachary Chilton, and Ankur Kaushik
 ## Task:
 Implement fine grained lock-based and lock-free priority queue algorithms. Compare the performance of lock-based and lock-free algorithms.
 
+## Instructions to test our code:
+You may test our code by running the JUnit test cases at src/QueueTest.java. Alternatively, you may compile and run src/PerformanceComparison.java to run our benchmarking code. More details on the performance comparison are included below.
+
 ## Fine Grained Lock-Based Priority Queue: LockQueue.java
 Our implementation of the fine-grained lock priority queue is based on the following paper by Tamir, Morrison, and Rinetzky:
 https://www.cs.tau.ac.il/~mad/publications/opodis2015-heap.pdf
