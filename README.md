@@ -63,4 +63,4 @@ The performance comparison operates in three sequential stages. Each stage's wor
 3. Concurrently delete 1,000,000 elements.
 
 Results of performance comparison a 4-core machine:
-![Results](https://github.com/juanpaez22/ParallelPriorityQueue/blob/master/results/Parallel%20Priority%20Queue%20Results.JPG)
+![Results](https://github.com/Kieran-Hannon/ParallelPriorityQueue/blob/master/results/Parallel%20Priority%20Queue%20Results.JPG)
